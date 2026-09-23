@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790129041137,
+      "tag": "0000_insights_da_casa_core",
+      "breakpoints": true
+    }
+  ]
+}
