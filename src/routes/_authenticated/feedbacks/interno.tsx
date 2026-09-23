@@ -287,7 +287,7 @@ function InternoPage() {
                   <tr className="border-b border-border text-[10px] tracking-wide text-muted-foreground uppercase">
                     <th className="pb-2 font-medium">Origem</th>
                     <th className="pb-2 font-medium">Setor</th>
-                    <th className="pb-2 text-right font-medium">Score</th>
+                    <th className="pb-2 pr-3 text-right font-medium">Score</th>
                     <th className="pb-2 font-medium">Comentário</th>
                     <th className="pb-2 text-right font-medium">Data</th>
                   </tr>

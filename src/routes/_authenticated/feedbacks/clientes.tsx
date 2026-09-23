@@ -305,7 +305,7 @@ function ClientesPage() {
                   <tr className="border-b border-border text-[10px] tracking-wide text-muted-foreground uppercase">
                     <th className="pb-2 font-medium">Cliente</th>
                     <th className="pb-2 font-medium">Categoria</th>
-                    <th className="pb-2 text-right font-medium">Nota</th>
+                    <th className="pb-2 pr-3 text-right font-medium">Nota</th>
                     <th className="pb-2 font-medium">Mensagem</th>
                     <th className="pb-2 text-right font-medium">Data</th>
                   </tr>
