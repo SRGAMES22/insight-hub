@@ -1,7 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { ArrowLeft, House } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
 
 import { ROLE_LABEL, canAdminister, canSeeInternal, initials, useSessionInfo, useSignOut } from "@/lib/auth";
+import { HOME_PAGE, isAppPage, leavePage, useBackTarget, visitPage } from "@/lib/nav-history";
 
 type NavItem = { to: string; label: string; visible: boolean };
 
@@ -18,7 +20,17 @@ export function AppShell({
 }) {
   const { data } = useSessionInfo();
   const signOut = useSignOut();
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const backTo = useBackTarget();
+
+  useEffect(() => {
+    if (isAppPage(pathname)) visitPage(pathname);
+  }, [pathname]);
+
+  const goBack = () => {
+    navigate({ to: leavePage() ?? HOME_PAGE });
+  };
 
   const role = data?.role ?? "colaborador";
   const nome = data?.nome ?? "";
@@ -102,6 +114,28 @@ export function AppShell({
         <main className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 border-b border-border bg-white/60 backdrop-blur-2xl">
             <div className="flex flex-wrap items-center gap-3 px-5 py-3 lg:px-8">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  disabled={!backTo}
+                  title="Voltar para a tela anterior"
+                  aria-label="Voltar para a tela anterior"
+                  className="glass-chip inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-brand disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  Voltar
+                </button>
+                <Link
+                  to={HOME_PAGE}
+                  title="Menu inicial"
+                  aria-label="Menu inicial"
+                  className="glass-chip inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-brand"
+                >
+                  <House className="size-3.5" />
+                  <span className="hidden sm:inline">Menu inicial</span>
+                </Link>
+              </div>
               <div className="mr-auto">
                 <h1 className="text-base font-semibold sm:text-lg">{title}</h1>
                 {subtitle ? <p className="text-[11px] text-muted-foreground">{subtitle}</p> : null}
