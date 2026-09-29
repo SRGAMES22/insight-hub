@@ -19,7 +19,7 @@ const listeners = new Set<() => void>();
 let backTarget: AppPage | null = null;
 
 function sync() {
-  backTarget = stack.length > 1 ? stack[stack.length - 2] : null;
+  backTarget = stack.length > 1 ? (stack[stack.length - 2] ?? null) : null;
   for (const listener of listeners) listener();
 }
 
@@ -35,7 +35,7 @@ export function leavePage(): AppPage | null {
   if (stack.length < 2) return null;
   stack.pop();
   sync();
-  return stack[stack.length - 1];
+  return stack[stack.length - 1] ?? null;
 }
 
 function subscribe(listener: () => void) {

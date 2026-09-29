@@ -167,7 +167,11 @@ export function parseData(raw: string): Date | null {
 
   const br = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})(?:[ T](\d{1,2}):(\d{2}))?$/i.exec(text);
   if (br) {
-    const [, dia, mes, anoRaw, hora, minuto] = br;
+    const dia = br[1] ?? "0";
+    const mes = br[2] ?? "0";
+    const anoRaw = br[3] ?? "";
+    const hora = br[4];
+    const minuto = br[5];
     const ano = anoRaw.length === 2 ? 2000 + Number(anoRaw) : Number(anoRaw);
     const date = new Date(
       Date.UTC(ano, Number(mes) - 1, Number(dia), Number(hora ?? 0), Number(minuto ?? 0)),
