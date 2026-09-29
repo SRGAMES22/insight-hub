@@ -7,6 +7,15 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_LABEL, canAdminister, initials, useSessionInfo, type Role } from "@/lib/auth";
+import {
+  CSV_TARGETS,
+  CSV_TARGET_LABEL,
+  buildColumnMap,
+  parseData,
+  parseNota,
+  readCell,
+  type CsvTarget,
+} from "@/lib/csv-mapping";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -55,6 +64,7 @@ function AdminPage() {
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [arquivo, setArquivo] = useState("");
+  const [colunas, setColunas] = useState<Partial<Record<CsvTarget, string>>>({});
 
   const { data: users = [] } = useQuery({
     queryKey: ["admin-users"],
@@ -132,37 +142,57 @@ function AdminPage() {
 
   function handleFile(file: File) {
     setArquivo(file.name);
+    setColunas({});
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
       complete: (result) => {
+        const headers = result.meta.fields ?? [];
+        const map = buildColumnMap(headers);
+        setColunas(map);
+
+        const faltando = CSV_TARGETS.filter((target) => target === "cliente_email" || target === "nota")
+          .filter((target) => !map[target])
+          .map((target) => CSV_TARGET_LABEL[target].toLowerCase());
+
+        if (faltando.length > 0) {
+          toast.error(
+            `Não encontrei a coluna de ${faltando.join(" e ")}. Cabeçalhos lidos: ${
+              headers.length > 0 ? headers.join(", ") : "nenhum"
+            }`,
+          );
+          setPreview(null);
+          setErros([]);
+          return;
+        }
+
         const problemas: string[] = [];
         const validos: PreviewRow[] = [];
 
         result.data.forEach((raw, index) => {
           const linha = index + 2;
-          const email = (raw["cliente_email"] ?? raw["email"] ?? "").trim();
-          const nota = Number((raw["nota"] ?? "").toString().replace(",", "."));
+          const email = readCell(raw, map, "cliente_email");
+          const notaBruta = readCell(raw, map, "nota");
+          const nota = parseNota(notaBruta);
 
           if (!email) {
             problemas.push(`Linha ${linha}: e-mail ausente`);
             return;
           }
-          if (!Number.isFinite(nota) || nota < 1 || nota > 10) {
-            problemas.push(`Linha ${linha}: nota inválida (${raw["nota"] ?? "vazia"})`);
+          if (nota === null || nota < 1 || nota > 10) {
+            problemas.push(`Linha ${linha}: nota inválida (${notaBruta || "vazia"})`);
             return;
           }
 
-          const dataBruta = (raw["data_envio"] ?? "").trim();
-          const data = dataBruta && !Number.isNaN(Date.parse(dataBruta)) ? new Date(dataBruta) : new Date();
+          const data = parseData(readCell(raw, map, "data_envio")) ?? new Date();
 
           validos.push({
             cliente_email: email,
-            categoria: (raw["categoria"] ?? "").trim().toLowerCase() || null,
+            categoria: readCell(raw, map, "categoria").toLowerCase() || null,
             nota: Math.round(nota),
-            feedback_texto: (raw["feedback_texto"] ?? raw["feedback"] ?? "").trim() || null,
-            tags: (raw["tags"] ?? "")
-              .split(/[;,]/)
+            feedback_texto: readCell(raw, map, "feedback_texto") || null,
+            tags: readCell(raw, map, "tags")
+              .split(/[;,|]/)
               .map((tag) => tag.trim().toLowerCase())
               .filter(Boolean),
             data_envio: data.toISOString(),
@@ -253,8 +283,9 @@ function AdminPage() {
       <section className="glass-panel rise p-4" style={{ animationDelay: "0.08s" }}>
         <h2 className="text-sm font-semibold">Importar feedbacks de clientes (CSV)</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Colunas aceitas: <span className="num">cliente_email, categoria, nota, feedback_texto, tags, data_envio</span>.
-          Tags separadas por ponto e vírgula.
+          Os nomes das colunas não precisam ser exatos: o app entende maiúsculas, minúsculas, acentos, espaços e
+          símbolos (ex.: <span className="num">E-mail do Cliente</span>, <span className="num">Nota (1 a 10)</span>,{" "}
+          <span className="num">Data de envio</span>). Tags separadas por ponto e vírgula.
         </p>
 
         <input
@@ -267,6 +298,16 @@ function AdminPage() {
           }}
           className="mt-3 block w-full max-w-sm cursor-pointer rounded-lg border border-dashed border-border bg-transparent px-3 py-2 text-xs text-muted-foreground"
         />
+
+        {CSV_TARGETS.some((target) => colunas[target]) ? (
+          <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+            {CSV_TARGETS.filter((target) => colunas[target]).map((target) => (
+              <span key={target} className="glass-chip rounded-lg px-2 py-1 text-muted-foreground">
+                {CSV_TARGET_LABEL[target]}: <span className="num text-foreground/80">{colunas[target]}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
 
         {preview ? (
           <div className="mt-4 space-y-3">
