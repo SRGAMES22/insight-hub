@@ -22,7 +22,10 @@ export const CSV_TARGET_LABEL: Record<CsvTarget, string> = {
   data_envio: "Data de envio",
 };
 
-const ORDER: CsvTarget[] = ["cliente_email", "nota", "data_envio", "tags", "categoria", "feedback_texto"];
+/** Ordem de atendimento: campos mais específicos primeiro. */
+export const CSV_TARGETS: CsvTarget[] = ["cliente_email", "nota", "data_envio", "tags", "categoria", "feedback_texto"];
+
+const ORDER = CSV_TARGETS;
 
 /** Nomes exatos (já normalizados) que cada campo reconhece. */
 const ALIASES: Record<CsvTarget, string[]> = {
